@@ -1,8 +1,20 @@
-import { writable, get } from 'svelte/store';
+import { writable } from 'svelte/store';
 
 function persisted<T>(key: string, initial: T) {
-  const stored = typeof localStorage !== 'undefined' ? localStorage.getItem(key) : null;
-  const store = writable<T>(stored ? JSON.parse(stored) : initial);
+  let value = initial;
+  if (typeof localStorage !== 'undefined') {
+    const stored = localStorage.getItem(key);
+    if (stored !== null) {
+      try {
+        value = JSON.parse(stored);
+      } catch {
+        // v1 stored plain strings (e.g. "warm" not '"warm"') — use as-is
+        value = stored as unknown as T;
+      }
+    }
+  }
+  const store = writable<T>(value);
+  // Always write back as valid JSON so future reads succeed
   store.subscribe(v => {
     if (typeof localStorage !== 'undefined') localStorage.setItem(key, JSON.stringify(v));
   });
