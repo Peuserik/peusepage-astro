@@ -11,8 +11,9 @@
   });
 
   function toggleMode() {
-    darkMode.update(v => !v);
-    document.documentElement.setAttribute('data-mode', $darkMode ? 'dark' : 'light');
+    const newDark = !$darkMode;
+    darkMode.set(newDark);
+    document.documentElement.setAttribute('data-mode', newDark ? 'dark' : 'light');
   }
 
   function setTheme(t: string) {
