@@ -1,17 +1,131 @@
 ---
+import MonitorBezel from '../components/MonitorBezel.astro';
+import Controls from '../components/Controls.svelte';
+import Certificate from '../components/Certificate.astro';
+import LandingCanvas from '../components/LandingCanvas.svelte';
+import { config, translations } from '../lib/config';
+import '../styles/global.css';
 
+const officeUrl = `${import.meta.env.BASE_URL}office`;
+const t = translations;
 ---
 
-<html lang="en">
-	<head>
-		<meta charset="utf-8" />
-		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-		<link rel="icon" href="/favicon.ico" />
-		<meta name="viewport" content="width=device-width" />
-		<meta name="generator" content={Astro.generator} />
-		<title>Astro</title>
-	</head>
-	<body>
-		<h1>Astro</h1>
-	</body>
+<!doctype html>
+<html lang="en" data-theme="warm" data-mode="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width" />
+  <title>{config.person.name} — Portfolio</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Space+Grotesk:wght@700&family=Bebas+Neue&family=Cinzel:wght@700&family=Special+Elite&family=Major+Mono+Display&family=VT323&display=swap" rel="stylesheet" />
+  <script>
+    // Restore theme/mode before paint
+    (function(){
+      const h = document.documentElement;
+      const m = localStorage.getItem('psp_dark');
+      const th = localStorage.getItem('psp_theme');
+      const l = localStorage.getItem('psp_lang');
+      if (m) h.setAttribute('data-mode', JSON.parse(m) ? 'dark' : 'light');
+      if (th) h.setAttribute('data-theme', JSON.parse(th));
+      if (l) h.setAttribute('lang', JSON.parse(l));
+    })();
+  </script>
+</head>
+<body class="page-landing">
+
+  <MonitorBezel>
+    <LandingCanvas client:only="svelte" mainUrl={officeUrl} />
+
+    <div class="screen-overlay">
+      <div class="screen-overlay__cert">
+        <Certificate
+          name={config.person.name}
+          title={config.person.title}
+          tagline={config.person.tagline}
+          size="large"
+        />
+      </div>
+      <div class="screen-overlay__welcome">
+        <span class="welcome-text" id="welcome-text">Welcome</span>
+      </div>
+      <p class="screen-overlay__hint" id="screen-hint">Click anywhere to enter</p>
+    </div>
+
+    <Controls client:only="svelte" slot="controls" />
+  </MonitorBezel>
+
+  <script>
+    const FONTS = [
+      "'Playfair Display', serif",
+      "'Space Grotesk', sans-serif",
+      "'Bebas Neue', sans-serif",
+      "'Cinzel', serif",
+      "'Special Elite', cursive",
+      "'Major Mono Display', monospace",
+    ];
+    const STRINGS = { en: 'Welcome', de: 'Willkommen' };
+    let fi = 0, flip = false;
+    const el = document.getElementById('welcome-text');
+    setInterval(() => {
+      if (!el) return;
+      el.style.opacity = '0';
+      setTimeout(() => {
+        fi = (fi + 1) % FONTS.length;
+        el.style.fontFamily = FONTS[fi];
+        flip = !flip;
+        const langAttr = document.documentElement.getAttribute('lang') || 'en';
+        const lang = flip ? (langAttr === 'en' ? 'de' : 'en') : langAttr;
+        el.textContent = STRINGS[lang] || 'Welcome';
+        el.style.opacity = '1';
+      }, 400);
+    }, 3000);
+  </script>
+
+  <style>
+    body { margin: 0; overflow: hidden; background: var(--bg, #1a1008); }
+
+    .screen-overlay {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2rem;
+      pointer-events: none;
+      z-index: 5;
+    }
+
+    .screen-overlay__cert { pointer-events: auto; }
+
+    .screen-overlay__welcome {
+      text-align: center;
+    }
+
+    .welcome-text {
+      font-size: clamp(2.5rem, 7vw, 5rem);
+      color: var(--text, #f0deb4);
+      text-shadow: 0 0 20px var(--glow), 0 0 40px var(--glow);
+      display: inline-block;
+      transition: opacity 0.4s ease;
+    }
+
+    .screen-overlay__hint {
+      position: absolute;
+      bottom: 1.5rem;
+      font-size: 0.8rem;
+      color: var(--text-muted, #a08060);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      animation: pulse 2.5s ease-in-out infinite;
+      margin: 0;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 0.4; }
+      50%       { opacity: 1; }
+    }
+  </style>
+</body>
 </html>

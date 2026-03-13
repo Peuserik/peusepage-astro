@@ -1,0 +1,78 @@
+---
+// No props needed — always uses fixed dark bezel colors
+---
+<div class="monitor">
+  <div class="monitor-frame">
+    <div class="monitor-screen">
+      <slot />
+    </div>
+  </div>
+  <slot name="controls" />
+</div>
+
+<style>
+  .monitor {
+    position: fixed;
+    inset: 0;
+    background: var(--bezel-bg);
+    padding: var(--bezel-top) var(--bezel-side) var(--bezel-bottom);
+    display: flex;
+  }
+
+  .monitor::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: var(--bezel-top);
+    background: linear-gradient(to bottom, rgba(255, 255, 255, 0.05), transparent);
+    pointer-events: none;
+    z-index: 60;
+  }
+
+  .monitor::after {
+    content: '● PEUSEPAGE ●';
+    position: absolute;
+    bottom: 1.1rem;
+    left: 50%;
+    transform: translateX(-50%);
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 0.55rem;
+    letter-spacing: 0.35em;
+    color: #2a2018;
+    white-space: nowrap;
+    pointer-events: none;
+  }
+
+  .monitor-frame {
+    flex: 1;
+    position: relative;
+    background: #060402;
+    border-radius: 4px;
+    box-shadow:
+      0 0 0 3px #0e0c08,
+      0 0 0 5px #1e1a14,
+      inset 0 0 0 2px #2a2218,
+      inset 0 0 30px rgba(0, 0, 0, 0.9);
+    overflow: hidden;
+  }
+
+  .monitor-screen {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    border-radius: 3px;
+  }
+
+  .monitor-screen::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    box-shadow:
+      inset 0 0 60px rgba(0, 0, 0, 0.5),
+      inset 0 0 20px var(--glow, rgba(232, 160, 64, 0.3));
+    pointer-events: none;
+    z-index: 10;
+  }
+</style>

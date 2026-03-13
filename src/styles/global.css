@@ -1,0 +1,133 @@
+/* ============================================================
+   Global CSS — CSS custom properties for all theme combos
+   ============================================================ */
+
+/* Fixed bezel colors (always dark) */
+:root {
+  --bezel-bg: linear-gradient(165deg, #2e2820 0%, #1e1a14 30%, #0e0c08 60%, #181410 100%);
+  --bezel-side: clamp(24px, 4vw, 52px);
+  --bezel-top: clamp(20px, 3.5vw, 44px);
+  --bezel-bottom: clamp(60px, 9vw, 100px);
+  --font-ui: 'Space Grotesk', sans-serif;
+}
+
+/* ── Warm Dark (default) ── */
+[data-theme="warm"][data-mode="dark"],
+:root {
+  --bg: #1a1008;
+  --bg-screen: #0d0804;
+  --bg-room: #120c06;
+  --surface: #2a1e10;
+  --surface-2: #3a2a18;
+  --border: #4a3820;
+  --text: #f0deb4;
+  --text-muted: #a08060;
+  --accent: #e8a040;
+  --glow: rgba(232, 160, 64, 0.4);
+  --bezel: #1e1a14;
+}
+
+/* ── Warm Light ── */
+[data-theme="warm"][data-mode="light"] {
+  --bg: #f5e8d0;
+  --bg-screen: #ede0c4;
+  --bg-room: #f0e4c8;
+  --surface: #e8d8b8;
+  --surface-2: #ddc8a0;
+  --border: #c8a870;
+  --text: #3a2808;
+  --text-muted: #7a5830;
+  --accent: #c07820;
+  --glow: rgba(192, 120, 32, 0.3);
+  --bezel: #1e1a14;
+}
+
+/* ── Cool Dark ── */
+[data-theme="cool"][data-mode="dark"] {
+  --bg: #080e1a;
+  --bg-screen: #040810;
+  --bg-room: #060c16;
+  --surface: #101828;
+  --surface-2: #182438;
+  --border: #203050;
+  --text: #b4d4f0;
+  --text-muted: #6090b0;
+  --accent: #40a0e8;
+  --glow: rgba(64, 160, 232, 0.4);
+  --bezel: #0e1420;
+}
+
+/* ── Cool Light ── */
+[data-theme="cool"][data-mode="light"] {
+  --bg: #d0e4f8;
+  --bg-screen: #c4d8f0;
+  --bg-room: #c8daf4;
+  --surface: #b8cce8;
+  --surface-2: #a0b8e0;
+  --border: #70a0d0;
+  --text: #081830;
+  --text-muted: #305878;
+  --accent: #1868c0;
+  --glow: rgba(24, 104, 192, 0.3);
+  --bezel: #0e1420;
+}
+
+/* ── Mono Dark ── */
+[data-theme="mono"][data-mode="dark"] {
+  --bg: #080808;
+  --bg-screen: #040404;
+  --bg-room: #060606;
+  --surface: #181818;
+  --surface-2: #282828;
+  --border: #383838;
+  --text: #e8e8e8;
+  --text-muted: #888888;
+  --accent: #c0c0c0;
+  --glow: rgba(192, 192, 192, 0.3);
+  --bezel: #141414;
+}
+
+/* ── Mono Light ── */
+[data-theme="mono"][data-mode="light"] {
+  --bg: #f0f0f0;
+  --bg-screen: #e8e8e8;
+  --bg-room: #ececec;
+  --surface: #e0e0e0;
+  --surface-2: #d0d0d0;
+  --border: #b0b0b0;
+  --text: #101010;
+  --text-muted: #606060;
+  --accent: #202020;
+  --glow: rgba(32, 32, 32, 0.2);
+  --bezel: #141414;
+}
+
+/* ── Base Reset ── */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  font-family: var(--font-ui);
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  overflow: hidden;
+}
+
+a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}

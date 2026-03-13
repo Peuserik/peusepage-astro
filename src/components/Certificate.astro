@@ -1,0 +1,132 @@
+---
+interface Props {
+  name: string;
+  title: string;
+  tagline: string;
+  size?: 'large' | 'small';
+}
+
+const { name, title, tagline, size = 'large' } = Astro.props;
+---
+
+<div class={`certificate certificate--${size}`}>
+  <div class="certificate__outer">
+    <div class="certificate__inner">
+      <div class="certificate__content">
+        <div class="certificate__ornament">❧</div>
+        <p class="certificate__label">Portfolio</p>
+        <h1 class="certificate__name">{name}</h1>
+        <div class="certificate__rule"></div>
+        <p class="certificate__title">{title}</p>
+        <div class="certificate__rule certificate__rule--thin"></div>
+        <p class="certificate__tagline">{tagline}</p>
+        <div class="certificate__ornament">❧</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .certificate {
+    font-family: 'Cinzel', serif;
+    color: #3a2808;
+    user-select: none;
+  }
+
+  .certificate--large {
+    --cert-width: clamp(280px, 40vw, 520px);
+    --cert-pad: 2rem;
+    --cert-name-size: clamp(1.4rem, 3.5vw, 2.4rem);
+    --cert-title-size: clamp(0.75rem, 1.5vw, 1rem);
+    --cert-tag-size: clamp(0.65rem, 1.2vw, 0.85rem);
+    --cert-outer-pad: 12px;
+    --cert-inner-pad: 8px;
+  }
+
+  .certificate--small {
+    --cert-width: clamp(160px, 18vw, 240px);
+    --cert-pad: 1rem;
+    --cert-name-size: clamp(0.8rem, 1.5vw, 1.1rem);
+    --cert-title-size: clamp(0.55rem, 0.9vw, 0.7rem);
+    --cert-tag-size: clamp(0.5rem, 0.8vw, 0.65rem);
+    --cert-outer-pad: 6px;
+    --cert-inner-pad: 4px;
+  }
+
+  .certificate__outer {
+    width: var(--cert-width);
+    background: #f5e8cc;
+    padding: var(--cert-outer-pad);
+    border: 2px solid #c8a040;
+    box-shadow:
+      0 4px 24px rgba(0, 0, 0, 0.5),
+      inset 0 0 20px rgba(200, 160, 64, 0.08);
+  }
+
+  .certificate__inner {
+    border: 1px solid #d4a848;
+    padding: var(--cert-inner-pad);
+  }
+
+  .certificate__content {
+    background: #faf3e0;
+    padding: var(--cert-pad);
+    border: 1px solid #e8c878;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5em;
+    text-align: center;
+  }
+
+  .certificate__ornament {
+    color: #c8a040;
+    font-size: 1.2em;
+    line-height: 1;
+  }
+
+  .certificate__label {
+    font-size: var(--cert-title-size);
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: #8a6020;
+    margin: 0;
+  }
+
+  .certificate__name {
+    font-size: var(--cert-name-size);
+    font-weight: 700;
+    color: #2a1808;
+    margin: 0.1em 0;
+    line-height: 1.2;
+  }
+
+  .certificate__rule {
+    width: 70%;
+    height: 1px;
+    background: linear-gradient(to right, transparent, #c8a040, transparent);
+    margin: 0.25em 0;
+  }
+
+  .certificate__rule--thin {
+    width: 50%;
+    opacity: 0.5;
+  }
+
+  .certificate__title {
+    font-size: var(--cert-title-size);
+    letter-spacing: 0.08em;
+    color: #5a3818;
+    margin: 0;
+  }
+
+  .certificate__tagline {
+    font-family: 'Special Elite', cursive;
+    font-size: var(--cert-tag-size);
+    color: #7a5828;
+    font-style: italic;
+    margin: 0;
+    max-width: 90%;
+    line-height: 1.5;
+  }
+</style>

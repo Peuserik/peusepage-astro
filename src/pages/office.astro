@@ -1,0 +1,26 @@
+---
+import '../styles/global.css';
+---
+<!doctype html>
+<html lang="en" data-theme="warm" data-mode="dark">
+<head>
+  <meta charset="UTF-8" />
+  <title>Office — Coming Soon</title>
+  <script>
+    (function(){
+      const h = document.documentElement;
+      const m = localStorage.getItem('psp_dark');
+      const t = localStorage.getItem('psp_theme');
+      if (m) h.setAttribute('data-mode', JSON.parse(m) ? 'dark' : 'light');
+      if (t) h.setAttribute('data-theme', JSON.parse(t));
+    })();
+  </script>
+</head>
+<body style="margin:0;background:var(--bg,#1a1008);color:var(--text,#f0deb4);font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;">
+  <div style="text-align:center">
+    <h1 style="font-size:3rem;margin-bottom:1rem;">🏢</h1>
+    <p>Office scene coming soon...</p>
+    <a href={`${import.meta.env.BASE_URL}`} style="color:var(--accent,#e8a040)">← Back to landing</a>
+  </div>
+</body>
+</html>
