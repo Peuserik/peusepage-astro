@@ -1,26 +1,46 @@
 ---
+import MonitorBezel from '../components/MonitorBezel.astro';
+import Controls from '../components/Controls.svelte';
+import OfficeScene from '../components/OfficeScene.svelte';
+import { config, translations } from '../lib/config';
 import '../styles/global.css';
+
+const landingUrl = `${import.meta.env.BASE_URL}/`.replace(/\/\//g, '/');
 ---
 <!doctype html>
 <html lang="en" data-theme="warm" data-mode="dark" style="background:#080604">
 <head>
   <meta charset="UTF-8" />
-  <title>Office — Coming Soon</title>
+  <meta name="viewport" content="width=device-width" />
+  <title>{config.person.name} — Office</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=VT323&family=Special+Elite&family=Space+Grotesk:wght@700&display=swap" rel="stylesheet" />
   <script>
     (function(){
       const h = document.documentElement;
-      const m = localStorage.getItem('psp_dark');
-      const t = localStorage.getItem('psp_theme');
-      if (m) h.setAttribute('data-mode', JSON.parse(m) ? 'dark' : 'light');
-      if (t) h.setAttribute('data-theme', JSON.parse(t));
+      function safe(key, fallback) {
+        try { const v = localStorage.getItem(key); return v !== null ? JSON.parse(v) : fallback; }
+        catch { return localStorage.getItem(key) ?? fallback; }
+      }
+      h.setAttribute('data-mode',  safe('psp_dark', true) ? 'dark' : 'light');
+      h.setAttribute('data-theme', safe('psp_theme', 'warm'));
+      h.setAttribute('lang',       safe('psp_lang', 'en'));
     })();
   </script>
 </head>
-<body style="margin:0;background:var(--bg,#1a1008);color:var(--text,#f0deb4);font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;">
-  <div style="text-align:center">
-    <h1 style="font-size:3rem;margin-bottom:1rem;">🏢</h1>
-    <p>Office scene coming soon...</p>
-    <a href={`${import.meta.env.BASE_URL}`} style="color:var(--accent,#e8a040)">← Back to landing</a>
-  </div>
+<body>
+  <MonitorBezel>
+    <OfficeScene
+      client:only="svelte"
+      configJson={JSON.stringify(config)}
+      translationsJson={JSON.stringify(translations)}
+      landingUrl={landingUrl}
+    />
+    <Controls client:only="svelte" slot="controls" />
+  </MonitorBezel>
+  <style>
+    body { margin: 0; overflow: hidden; background: var(--bg, #1a1008); }
+  </style>
 </body>
 </html>
