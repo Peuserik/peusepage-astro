@@ -2,7 +2,7 @@
 
 A personal portfolio website built with **Astro + Pixi.js + Svelte**, designed for GitHub Pages. Features a retro CRT monitor landing page and an interactive CSS-art office scene with pop-up windows.
 
-**Live site:** `https://<your-username>.github.io/peusepage-astro/`
+**Live site (example):** `https://astro.peuserik.de/`
 
 ---
 
@@ -31,7 +31,7 @@ A personal portfolio website built with **Astro + Pixi.js + Svelte**, designed f
 
 ## ⚙️ Updating your content
 
-All personal content is in **one file**: `src/data/config.yml`
+All personal content is in **one file**: `src/content/data/config.yml`
 
 ```yaml
 person:
@@ -67,18 +67,18 @@ pinboard:
     - "Something you attended or achieved"
 ```
 
-Translations (button labels, popup titles, etc.) are in `src/data/translations.yml`.
+Translations (button labels, popup titles, etc.) are in `src/content/data/translations.yml`.
 
 ---
 
 ## 🚀 Local development
 
 ```bash
-# Requires Node 22+ (nvm recommended)
+# Requires Node >=22.12.0 (nvm recommended)
 nvm use 22
 
 npm install
-npm run dev        # http://localhost:4321/peusepage-astro/
+npm run dev        # http://localhost:4321/
 npm run build      # production build → ./dist/
 npm run preview    # preview the build locally
 ```
@@ -102,8 +102,9 @@ The workflow at `.github/workflows/deploy.yml` builds and deploys automatically 
    yourdomain.com
    ```
 2. In your DNS provider, add:
-   - **CNAME record**: `www` → `<your-username>.github.io`
-   - Or **A records** for the apex domain pointing to GitHub's IPs:
+  - For a **subdomain** (recommended), use a **CNAME**:
+    - `astro` → `<your-username>.github.io`
+  - For an **apex/root domain** (`yourdomain.com`), use **A records**:
      ```
      185.199.108.153
      185.199.109.153
@@ -122,10 +123,37 @@ GitHub automatically provisions a **Let's Encrypt SSL certificate** once DNS pro
 >   // ...
 > });
 > ```
+>
+> Example for this project:
+> ```js
+> export default defineConfig({
+>   site: 'https://astro.peuserik.de',
+>   base: '/',
+>   // ...
+> });
+> ```
 
-### 3. Subdirectory deployment (default)
+### 3. Troubleshooting custom domain
 
-The default config deploys to `https://<username>.github.io/peusepage-astro/`. If you rename the repo, update `base` in `astro.config.mjs` to match.
+If the page loads but appears blank and the browser console shows 404s for paths like `/peusepage-astro/_astro/...`, the deployment is still using a subdirectory base.
+
+Checklist:
+- `astro.config.mjs` must use `base: '/'` and your correct `site` URL.
+- `public/CNAME` must exactly match the hostname you open in the browser (for example `astro.peuserik.de`).
+- Push to `main` and wait for `.github/workflows/deploy.yml` to finish successfully.
+- Hard refresh after deploy (or use a private window) to avoid stale cached HTML.
+
+### 4. Subdirectory deployment (project pages)
+
+Use this only when deploying to a repository subpath like `https://<username>.github.io/peusepage-astro/`:
+
+```js
+export default defineConfig({
+  site: 'https://<username>.github.io',
+  base: '/peusepage-astro',
+  // ...
+});
+```
 
 ---
 
@@ -133,7 +161,7 @@ The default config deploys to `https://<username>.github.io/peusepage-astro/`. I
 
 ```
 src/
-├── data/
+├── content/data/
 │   ├── config.yml          ← ✏️  Edit this to update your content
 │   └── translations.yml    ← ✏️  Edit this to update UI strings
 ├── components/
