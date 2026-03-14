@@ -15,12 +15,7 @@
   let transitioning = false;
   let translations: Record<string, Record<string, string>> = {};
 
-  // Reactive store values
-  $: t = $theme;
-  $: dark = $darkMode;
-  $: l = $lang;
-
-  // Welcome text cycling state
+  // ── Welcome text cycling ──────────────────────────────────────────────────
   const FONTS = [
     "'Playfair Display', serif",
     "'Space Grotesk', sans-serif",
@@ -29,98 +24,191 @@
     "'Special Elite', cursive",
     "'Major Mono Display', monospace",
   ];
-  let fontIdx = 0;
-  let flip = false;
+  let fontIdx = 0, flip = false;
   let welcomeFont = FONTS[0];
   let welcomeOpacity = 1;
   let welcomeText = 'Welcome';
   let hintText = 'Click anywhere to enter';
-
-  // Update hint text reactively
   $: hintText = translations[$lang]?.tagline_cta ?? 'Click anywhere to enter';
-  // (Pixi bg color is drawn each tick by buildParticleNetwork, reading live store values)
 
-  function getBgColor(th: string, dk: boolean): number {
-    if (!dk) return 0xe8d8b0;
-    if (th === 'cool') return 0x050810;
-    if (th === 'mono') return 0x040404;
-    return 0x0a0a0f;
+  // ── Color helpers ─────────────────────────────────────────────────────────
+  function getBg(th: string, dk: boolean): number {
+    if (!dk) return 0xd8c898;
+    if (th === 'cool') return 0x020610;
+    if (th === 'mono') return 0x030303;
+    return 0x080502;
+  }
+  function getAccent(th: string, dk: boolean): number {
+    if (!dk) return th === 'cool' ? 0x2060c0 : th === 'mono' ? 0x505050 : 0xb05010;
+    if (th === 'cool') return 0x2888e0;
+    if (th === 'mono') return 0x909090;
+    return 0xe07828;
+  }
+  function getBright(th: string): number {
+    if (th === 'cool') return 0x90d8ff;
+    if (th === 'mono') return 0xd0d0d0;
+    return 0xffc060;
   }
 
-  function getParticleColor(th: string, dk: boolean): number {
-    if (!dk) return 0xc07820;
-    if (th === 'cool') return 0x40a0e8;
-    if (th === 'mono') return 0xc0c0c0;
-    return 0xe8a040;
-  }
+  // ── Screensaver state ─────────────────────────────────────────────────────
+  // warm — embers
+  type Ember = { x: number; y: number; vx: number; vy: number; r: number; life: number; max: number };
+  const embers: Ember[] = [];
 
+  // cool — starfield
+  type Star = { x: number; y: number; z: number; pz: number };
+  const stars: Star[] = [];
+  let starsReady = false;
+
+  // mono — matrix rain columns
+  type Col = { x: number; y: number; speed: number; len: number };
+  const cols: Col[] = [];
+  let colsReady = false;
+  let tick = 0;
+
+  // ── Mount ─────────────────────────────────────────────────────────────────
   onMount(async () => {
     try { translations = JSON.parse(translationsJson); } catch {}
     welcomeText = translations[$lang]?.welcome ?? 'Welcome';
 
-    // Let Pixi create & own its canvas, append to our container
     app = new Application();
     await app.init({
       resizeTo: containerEl,
-      backgroundAlpha: 0,   // transparent — we draw bg in ticker
+      backgroundAlpha: 0,
       antialias: true,
       resolution: window.devicePixelRatio || 1,
       autoDensity: true,
     });
     Object.assign(app.canvas.style, { position: 'absolute', inset: '0', display: 'block' });
-    // Insert canvas BEFORE overlay so overlay stays on top
     containerEl.insertBefore(app.canvas, containerEl.firstChild);
-
-    buildParticleNetwork();
-    startWelcomeCycle();
-  });
-
-  onDestroy(() => app?.destroy(true));
-
-  function buildParticleNetwork() {
-    const N = 80;
-    type P = { x: number; y: number; vx: number; vy: number };
-    const pts: P[] = Array.from({ length: N }, () => ({
-      x: Math.random() * app.screen.width,
-      y: Math.random() * app.screen.height,
-      vx: (Math.random() - 0.5) * 0.5,
-      vy: (Math.random() - 0.5) * 0.5,
-    }));
 
     const gfx = new Graphics();
     app.stage.addChild(gfx);
 
     app.ticker.add(() => {
+      const W = app.screen.width, H = app.screen.height;
+      const th = $theme, dk = $darkMode;
+      tick++;
+
       gfx.clear();
-      // Draw background rect every frame so theme changes are instant
-      gfx.rect(0, 0, app.screen.width, app.screen.height).fill({ color: getBgColor($theme, $darkMode) });
+      gfx.rect(0, 0, W, H).fill({ color: getBg(th, dk) });
 
-      const color = getParticleColor($theme, $darkMode);
-
-      for (const p of pts) {
-        p.x += p.vx; p.y += p.vy;
-        if (p.x < 0 || p.x > app.screen.width)  p.vx *= -1;
-        if (p.y < 0 || p.y > app.screen.height) p.vy *= -1;
-      }
-
-      for (let i = 0; i < pts.length; i++) {
-        for (let j = i + 1; j < pts.length; j++) {
-          const dx = pts[i].x - pts[j].x, dy = pts[i].y - pts[j].y;
-          const dist = Math.sqrt(dx * dx + dy * dy);
-          if (dist < 130) {
-            gfx.moveTo(pts[i].x, pts[i].y);
-            gfx.lineTo(pts[j].x, pts[j].y);
-            gfx.stroke({ color, alpha: (1 - dist / 130) * 0.2, width: 0.8 });
-          }
-        }
-      }
-      for (const p of pts) {
-        gfx.circle(p.x, p.y, 1.5);
-        gfx.fill({ color, alpha: 0.7 });
-      }
+      if (th === 'warm') drawEmbers(gfx, W, H, th, dk);
+      else if (th === 'cool') drawStarfield(gfx, W, H, th, dk);
+      else drawMatrix(gfx, W, H, th, dk);
     });
+
+    startWelcomeCycle();
+  });
+
+  onDestroy(() => app?.destroy(true));
+
+  // ── Screensaver: warm — floating embers ──────────────────────────────────
+  function spawnEmber(W: number, H: number): Ember {
+    return {
+      x: W * 0.1 + Math.random() * W * 0.8,
+      y: H + 5,
+      vx: (Math.random() - 0.5) * 0.7,
+      vy: -(0.5 + Math.random() * 1.4),
+      r: 1.2 + Math.random() * 3.5,
+      life: 0,
+      max: 140 + Math.random() * 160,
+    };
   }
 
+  function drawEmbers(gfx: Graphics, W: number, H: number, th: string, dk: boolean) {
+    if (embers.length < 110) embers.push(spawnEmber(W, H));
+    const accent = getAccent(th, dk), bright = getBright(th);
+
+    for (let i = embers.length - 1; i >= 0; i--) {
+      const e = embers[i];
+      e.x += e.vx + Math.sin(e.life * 0.045 + i) * 0.4;
+      e.y += e.vy;
+      e.life++;
+      if (e.life > e.max || e.y < -10) { embers.splice(i, 1); continue; }
+
+      const p = e.life / e.max;
+      const alpha = p < 0.15 ? p / 0.15 : 1 - (p - 0.15) / 0.85;
+      gfx.circle(e.x, e.y, e.r * (1 - p * 0.4));
+      gfx.fill({ color: p > 0.45 ? bright : accent, alpha: alpha * 0.9 });
+    }
+  }
+
+  // ── Screensaver: cool — 3-D starfield ────────────────────────────────────
+  function initStars(W: number, H: number) {
+    stars.length = 0;
+    for (let i = 0; i < 220; i++)
+      stars.push({ x: Math.random() * W - W / 2, y: Math.random() * H - H / 2, z: Math.random() * W, pz: 0 });
+    starsReady = true;
+  }
+
+  function drawStarfield(gfx: Graphics, W: number, H: number, th: string, dk: boolean) {
+    if (!starsReady) initStars(W, H);
+    const speed = dk ? 5 : 2.5;
+    const accent = getAccent(th, dk), bright = getBright(th);
+
+    for (const s of stars) {
+      s.pz = s.z;
+      s.z -= speed;
+      if (s.z <= 1) { s.x = Math.random() * W - W / 2; s.y = Math.random() * H - H / 2; s.z = W; s.pz = W; }
+
+      const sx = (s.x / s.z) * W + W / 2;
+      const sy = (s.y / s.z) * H + H / 2;
+      const px = (s.x / s.pz) * W + W / 2;
+      const py = (s.y / s.pz) * H + H / 2;
+      const nearness = 1 - s.z / W;
+      const color = nearness > 0.7 ? bright : accent;
+
+      if (nearness > 0.05) {
+        gfx.moveTo(px, py).lineTo(sx, sy);
+        gfx.stroke({ color, alpha: nearness * 0.7, width: nearness * 1.5 });
+      }
+      gfx.circle(sx, sy, Math.max(0.5, nearness * 2));
+      gfx.fill({ color, alpha: nearness });
+    }
+  }
+
+  // ── Screensaver: mono — matrix character-rain ────────────────────────────
+  const CHARSET = 'ｦｧｨｩｪｫｬｭｮｯｰｱｲｳｴｵｶｷｸｹｺｻｼｽｾｿﾀﾁﾂﾃﾄﾅﾆﾇﾈﾉﾊﾋﾌﾍﾎﾏﾐﾑﾒﾓﾔﾕﾖﾗﾘﾙﾚﾛﾜﾝ01';
+  const CELL = 14; // px per column
+
+  function initCols(W: number, H: number) {
+    cols.length = 0;
+    const count = Math.floor(W / CELL);
+    for (let i = 0; i < count; i++)
+      cols.push({ x: i * CELL, y: -(Math.random() * H), speed: 1.5 + Math.random() * 3, len: 8 + Math.floor(Math.random() * 20) });
+    colsReady = true;
+  }
+
+  function drawMatrix(gfx: Graphics, W: number, H: number, th: string, dk: boolean) {
+    if (!colsReady || cols.length !== Math.floor(W / CELL)) initCols(W, H);
+    const accent = getAccent(th, dk), bright = getBright(th);
+
+    // Only advance every 2 ticks for a slower, chunkier feel
+    const advance = tick % 2 === 0;
+
+    for (const c of cols) {
+      if (advance) c.y += c.speed * CELL;
+      if (c.y - c.len * CELL > H) {
+        c.y = -CELL * (2 + Math.random() * 10);
+        c.speed = 1.5 + Math.random() * 3;
+        c.len = 8 + Math.floor(Math.random() * 20);
+      }
+
+      // Draw trail blocks
+      for (let j = 0; j < c.len; j++) {
+        const gy = c.y - j * CELL;
+        if (gy < 0 || gy > H) continue;
+        const t = j / c.len;
+        const color = j === 0 ? bright : accent;
+        const alpha = j === 0 ? 1 : (1 - t) * 0.65;
+        const w = CELL - 2, h = CELL - 2;
+        gfx.rect(c.x + 1, gy + 1, w, h).fill({ color, alpha });
+      }
+    }
+  }
+
+  // ── Welcome cycling ───────────────────────────────────────────────────────
   function startWelcomeCycle() {
     setInterval(() => {
       welcomeOpacity = 0;
@@ -135,40 +223,34 @@
     }, 3000);
   }
 
+  // ── Transition: flicker → collapse → navigate ────────────────────────────
   function triggerTransition() {
     if (triggered || !app) return;
     triggered = true;
-    transitioning = true; // hides HTML overlay immediately
+    transitioning = true;
 
     const filter = new ColorMatrixFilter();
     app.stage.filters = [filter];
-
     let phase = 0, elapsed = 0;
 
     app.ticker.add((ticker) => {
       elapsed += ticker.deltaMS;
 
       if (phase === 0) {
-        // Phase 0: flicker (350ms)
         if (elapsed < 350) {
           filter.brightness(1 + Math.abs(Math.sin(elapsed * 0.025)) * 2.5, false);
         } else { phase = 1; elapsed = 0; }
 
       } else if (phase === 1) {
-        // Phase 1: collapse + brighten (600ms)
         if (elapsed < 600) {
           const p = elapsed / 600;
           const s = 1 - p * 0.98;
           app.stage.scale.set(s);
-          app.stage.position.set(
-            app.screen.width  / 2 * (1 - s),
-            app.screen.height / 2 * (1 - s),
-          );
+          app.stage.position.set(app.screen.width / 2 * (1 - s), app.screen.height / 2 * (1 - s));
           filter.brightness(1 + p * 6, false);
         } else { phase = 2; elapsed = 0; }
 
       } else if (phase === 2 && elapsed >= 100) {
-        // Phase 2: navigate after brief white flash
         window.location.href = officeUrl;
       }
     });
