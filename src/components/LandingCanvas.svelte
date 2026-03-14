@@ -38,8 +38,8 @@
   // Update hint text reactively
   $: hintText = translations[$lang]?.tagline_cta ?? 'Click anywhere to enter';
 
-  // Update Pixi bg colour when theme/mode changes
-  $: if (app) app.renderer.background.color = getBgColor(t, dark);
+  // Update Pixi bg colour when theme/mode changes (guard: renderer only exists after app.init())
+  $: if (app?.renderer) app.renderer.background.color = getBgColor(t, dark);
 
   function getBgColor(th: string, dk: boolean): number {
     if (!dk) return 0xe8d8b0;

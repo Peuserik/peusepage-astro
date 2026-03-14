@@ -5,7 +5,7 @@ import LandingCanvas from '../components/LandingCanvas.svelte';
 import { config, translations } from '../lib/config';
 import '../styles/global.css';
 
-const officeUrl = `${import.meta.env.BASE_URL}office`;
+const officeUrl = `${import.meta.env.BASE_URL}/office`.replace(/\/\//g, '/');
 ---
 
 <!doctype html>
