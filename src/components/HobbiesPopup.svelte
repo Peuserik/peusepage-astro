@@ -37,7 +37,7 @@
 >
   <div class="titlebar" on:pointerdown={startDrag} style="cursor:move">
     <span class="title">🎮 {titleText}</span>
-    <button class="close-btn" on:click={closePopup} aria-label="Close">[X]</button>
+    <button class="close-btn" on:pointerdown|stopPropagation on:click={closePopup} aria-label="Close">[X]</button>
   </div>
 
   <div class="body">

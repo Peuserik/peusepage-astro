@@ -1,44 +1,163 @@
-# Astro Starter Kit: Minimal
-
-```sh
-npm create astro@latest -- --template minimal
-```
-
-> 🧑‍🚀 **Seasoned astronaut?** Delete this file. Have fun!
-
-## 🚀 Project Structure
-
-Inside of your Astro project, you'll see the following folders and files:
-
-```text
-/
-├── public/
-├── src/
-│   └── pages/
-│       └── index.astro
-└── package.json
-```
-
-Astro looks for `.astro` or `.md` files in the `src/pages/` directory. Each page is exposed as a route based on its file name.
-
-There's nothing special about `src/components/`, but that's where we like to put any Astro/React/Vue/Svelte/Preact components.
-
-Any static assets, like images, can be placed in the `public/` directory.
-
-## 🧞 Commands
-
-All commands are run from the root of the project, from a terminal:
-
-| Command                   | Action                                           |
-| :------------------------ | :----------------------------------------------- |
-| `npm install`             | Installs dependencies                            |
-| `npm run dev`             | Starts local dev server at `localhost:4321`      |
-| `npm run build`           | Build your production site to `./dist/`          |
-| `npm run preview`         | Preview your build locally, before deploying     |
-| `npm run astro ...`       | Run CLI commands like `astro add`, `astro check` |
-| `npm run astro -- --help` | Get help using the Astro CLI                     |
-
-## 👀 Want to learn more?
-
-Feel free to check [our documentation](https://docs.astro.build) or jump into our [Discord server](https://astro.build/chat).
 # peusepage-astro
+
+A personal portfolio website built with **Astro + Pixi.js + Svelte**, designed for GitHub Pages. Features a retro CRT monitor landing page and an interactive CSS-art office scene with pop-up windows.
+
+**Live site:** `https://<your-username>.github.io/peusepage-astro/`
+
+---
+
+## ✨ Features
+
+- **Landing page** — animated screensaver inside a CRT bezel (three themes: 🔥 Embers, 🌌 Starfield, 👾 Matrix)
+- **Office scene** — Pixi.js 2D room with clickable objects (monitor, nameplate, shelf, corkboard)
+- **Retro OS pop-ups** — draggable windows for CV, Hobbies, Pinboard, Main Menu
+- **Theme switching** — warm / cool / mono × dark / light
+- **Language toggle** — English / German
+- **Single config file** — all personal content lives in `src/data/config.yml`
+
+---
+
+## 🛠️ Tech stack
+
+| Layer | Technology |
+|---|---|
+| Static site generator | [Astro](https://astro.build) v5 |
+| 2D rendering | [Pixi.js](https://pixijs.com) v8 |
+| UI components | [Svelte](https://svelte.dev) v5 |
+| Hosting | GitHub Pages (via GitHub Actions) |
+| Node | 22+ (managed via nvm) |
+
+---
+
+## ⚙️ Updating your content
+
+All personal content is in **one file**: `src/data/config.yml`
+
+```yaml
+person:
+  name: "Your Name"
+  title: "Your Job Title"
+  tagline: "A short tagline about you."
+
+social:
+  linkedin: "https://linkedin.com/in/your-handle"
+  github:   "https://github.com/your-handle"
+  email:    "you@example.com"
+  xing:     ""          # leave empty to hide
+  x_handle: "@you"      # Twitter/X handle
+  threads_handle: "@you"
+
+cv_summary: >
+  A paragraph or two about your background.
+  Separate sentences become bullet points in the CV pop-up.
+
+hobbies:
+  - icon: "🎮"
+    label_en: "Gaming"
+    label_de: "Gaming"
+    description_en: "Short description in English."
+    description_de: "Kurze Beschreibung auf Deutsch."
+  # add up to 6 hobbies for the 2×3 grid
+
+pinboard:
+  currently_working_on:
+    - label: "Project Name"
+      percent: 75          # 0–100
+  latest_events:
+    - "Something you attended or achieved"
+```
+
+Translations (button labels, popup titles, etc.) are in `src/data/translations.yml`.
+
+---
+
+## 🚀 Local development
+
+```bash
+# Requires Node 22+ (nvm recommended)
+nvm use 22
+
+npm install
+npm run dev        # http://localhost:4321/peusepage-astro/
+npm run build      # production build → ./dist/
+npm run preview    # preview the build locally
+```
+
+---
+
+## 🌐 Deploying to GitHub Pages
+
+### 1. Repository settings
+
+1. Push to GitHub
+2. Go to **Settings → Pages**
+3. Set **Source** to `GitHub Actions`
+
+The workflow at `.github/workflows/deploy.yml` builds and deploys automatically on every push to `main`.
+
+### 2. Custom domain
+
+1. Add a `CNAME` file to the `public/` folder containing just your domain:
+   ```
+   yourdomain.com
+   ```
+2. In your DNS provider, add:
+   - **CNAME record**: `www` → `<your-username>.github.io`
+   - Or **A records** for the apex domain pointing to GitHub's IPs:
+     ```
+     185.199.108.153
+     185.199.109.153
+     185.199.110.153
+     185.199.111.153
+     ```
+3. In **Settings → Pages**, enter your custom domain and tick **Enforce HTTPS**.
+
+GitHub automatically provisions a **Let's Encrypt SSL certificate** once DNS propagates (can take up to 24 hours). No manual cert management needed.
+
+> **Note:** When using a custom domain, update `site` in `astro.config.mjs` to your domain and set `base: '/'` (no subdirectory needed):
+> ```js
+> export default defineConfig({
+>   site: 'https://yourdomain.com',
+>   base: '/',
+>   // ...
+> });
+> ```
+
+### 3. Subdirectory deployment (default)
+
+The default config deploys to `https://<username>.github.io/peusepage-astro/`. If you rename the repo, update `base` in `astro.config.mjs` to match.
+
+---
+
+## 📁 Project structure
+
+```
+src/
+├── data/
+│   ├── config.yml          ← ✏️  Edit this to update your content
+│   └── translations.yml    ← ✏️  Edit this to update UI strings
+├── components/
+│   ├── MonitorBezel.astro  CRT plastic frame (used on both pages)
+│   ├── Controls.svelte     Theme / lang / mode buttons
+│   ├── LandingCanvas.svelte  Pixi screensavers + transition
+│   ├── OfficeScene.svelte  Pixi office room + interactive zones
+│   ├── MainMenuPopup.svelte
+│   ├── CVPopup.svelte
+│   ├── HobbiesPopup.svelte
+│   └── PinboardPopup.svelte
+├── pages/
+│   ├── index.astro         Landing page
+│   └── office.astro        Office / main page
+├── stores/
+│   ├── settings.ts         theme, darkMode, lang (localStorage)
+│   └── popup.ts            activePopup store
+├── lib/
+│   └── config.ts           YAML loader (build-time)
+└── styles/
+    └── global.css          CSS custom properties for all 9 theme combos
+public/
+└── CNAME                   ← Add your custom domain here
+.github/workflows/
+└── deploy.yml              GitHub Actions build + deploy
+```
+

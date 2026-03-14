@@ -68,6 +68,12 @@
   let translations: any = {};
   let ro: ResizeObserver;
 
+  // Explicit store subscriptions so the raw Pixi ticker always reads live values
+  let currentTheme = 'warm';
+  let currentDark  = true;
+  const _unsubTheme = theme.subscribe(v => { currentTheme = v; });
+  const _unsubDark  = darkMode.subscribe(v => { currentDark  = v; });
+
   let hoverZone: string | null = null;
   let matrixTick = 0;
   let monitorOn = true;
@@ -615,13 +621,18 @@
 
   function drawHoverGlow(g: Graphics) {
     if (!hoverZone) return;
+    // 'monitor-group' lights up monitor screen, keyboard AND mouse together
+    if (hoverZone === 'monitor-group') {
+      g.rect(SC_X - 2, SC_Y - 2, SC_W + 4, SC_H + 4).stroke({ color: 0x40cc40, width: 2.5, alpha: 0.8 });
+      g.rect(KB_X - 4, KB_Y - 4, KB_W + 8, KB_H + 8).stroke({ color: 0x40cc40, width: 2.5, alpha: 0.8 });
+      g.roundRect(MS_X - 6, MS_Y - 6, MS_W + 12, MS_H + 12, (MS_W + 12) / 2).stroke({ color: 0x40cc40, width: 2.5, alpha: 0.8 });
+      return;
+    }
     const zones: Record<string, [number, number, number, number]> = {
-      menu:     [SC_X - 2, SC_Y - 2,   SC_W + 4,  SC_H + 4],
-      cv:       [PL_X - 2, PL_Y - 2,   PL_W + 4,  PL_H + 4],
-      corkboard:[CK_X - 2, CK_Y - 2,   CK_W + 4,  CK_H + 4],
-      hobbies:  [SH_X - 2, SH_Y - SH_H - 10, SH_W + 4, SH_H + 60],
-      keyboard: [KB_X - 4, KB_Y - 4, KB_W + 8, KB_H + 8],
-      mouse:    [MS_X - 6, MS_Y - 6, MS_W + 12, MS_H + 12],
+      cv:        [PL_X - 2,  PL_Y - 2,  PL_W + 4,  PL_H + 4],
+      corkboard: [CK_X - 2,  CK_Y - 2,  CK_W + 4,  CK_H + 4],
+      // books sit above SH_Y (tallest is 44px), shelf itself is SH_H=18 tall
+      hobbies:   [SH_X - 4,  SH_Y - 46, SH_W + 8,  SH_H + 52],
     };
     const z = zones[hoverZone];
     if (!z) return;
@@ -691,12 +702,12 @@
   // ── Interactive hit zones ─────────────────────────────────────────────────
   function setupInteractiveZones() {
     const zoneDefs: Array<{ name: string; x: number; y: number; w: number; h: number; popup: 'menu' | 'cv' | 'hobbies' | 'pinboard' }> = [
-      { name: 'menu',      x: SC_X - 14, y: SC_Y - 14, w: SC_W + 28, h: SC_H + 28, popup: 'menu'     },
-      { name: 'cv',        x: PL_X,      y: PL_Y,      w: PL_W,      h: PL_H,      popup: 'cv'       },
-      { name: 'corkboard', x: CK_X - 4,  y: CK_Y - 4,  w: CK_W + 8,  h: CK_H + 8,  popup: 'pinboard' },
-      { name: 'hobbies',   x: SH_X - 4,  y: SH_Y - 56, w: SH_W + 8,  h: 80,         popup: 'hobbies'  },
-      { name: 'keyboard',  x: KB_X - 4,  y: KB_Y - 4,  w: KB_W + 8,  h: KB_H + 8,  popup: 'menu'     },
-      { name: 'mouse',     x: MS_X - 6,  y: MS_Y - 6,  w: MS_W + 12, h: MS_H + 12, popup: 'menu'     },
+      { name: 'monitor-group', x: SC_X - 14, y: SC_Y - 14,  w: SC_W + 28, h: SC_H + 28, popup: 'menu'     },
+      { name: 'cv',            x: PL_X,      y: PL_Y,        w: PL_W,      h: PL_H,      popup: 'cv'       },
+      { name: 'corkboard',     x: CK_X - 4,  y: CK_Y - 4,   w: CK_W + 8,  h: CK_H + 8,  popup: 'pinboard' },
+      { name: 'hobbies',       x: SH_X - 4,  y: SH_Y - 48,  w: SH_W + 8,  h: SH_H + 54, popup: 'hobbies'  },
+      { name: 'monitor-group', x: KB_X - 4,  y: KB_Y - 4,   w: KB_W + 8,  h: KB_H + 8,  popup: 'menu'     },
+      { name: 'monitor-group', x: MS_X - 6,  y: MS_Y - 6,   w: MS_W + 12, h: MS_H + 12, popup: 'menu'     },
     ];
 
     for (const z of zoneDefs) {
@@ -783,11 +794,13 @@
     app.ticker.add(() => {
       matrixTick++;
       gfx.clear();
-      drawScene(gfx, $theme, $darkMode);
+      drawScene(gfx, currentTheme, currentDark);
     });
   });
 
   onDestroy(() => {
+    _unsubTheme();
+    _unsubDark();
     ro?.disconnect();
     app?.destroy(true);
   });
