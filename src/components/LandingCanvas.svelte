@@ -233,7 +233,8 @@
     app.stage.filters = [filter];
     let phase = 0, elapsed = 0;
 
-    app.ticker.add((ticker) => {
+    // Keep a reference so we can remove the listener after navigating
+    const onTick = (ticker: { deltaMS: number }) => {
       elapsed += ticker.deltaMS;
 
       if (phase === 0) {
@@ -251,9 +252,12 @@
         } else { phase = 2; elapsed = 0; }
 
       } else if (phase === 2 && elapsed >= 100) {
+        app.ticker.remove(onTick); // stop firing — prevents navigation throttle
         window.location.href = officeUrl;
       }
-    });
+    };
+
+    app.ticker.add(onTick);
   }
 </script>
 
@@ -290,11 +294,6 @@
     <p class="hint">{hintText}</p>
   </div>
   {/if}
-
-  <!-- White flash overlay that fades in at the end of the transition -->
-  {#if transitioning}
-  <div class="flash" style="animation-delay: 0.85s;"></div>
-  {/if}
 </div>
 
 <style>
@@ -318,18 +317,6 @@
     pointer-events: none; /* let clicks fall through to .wrap */
     z-index: 5;
   }
-
-  /* Transition flash overlay */
-  .flash {
-    position: absolute;
-    inset: 0;
-    background: white;
-    z-index: 10;
-    opacity: 0;
-    animation: flash-in 0.3s ease-in forwards;
-    pointer-events: none;
-  }
-  @keyframes flash-in { to { opacity: 1; } }
 
   /* Certificate */
   .cert {
