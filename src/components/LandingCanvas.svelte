@@ -12,6 +12,7 @@
   let containerEl: HTMLDivElement;
   let app: Application;
   let triggered = false;
+  let transitioning = false;
   let translations: Record<string, Record<string, string>> = {};
 
   // Reactive store values
@@ -37,9 +38,7 @@
 
   // Update hint text reactively
   $: hintText = translations[$lang]?.tagline_cta ?? 'Click anywhere to enter';
-
-  // Update Pixi bg colour when theme/mode changes (guard: renderer only exists after app.init())
-  $: if (app?.renderer) app.renderer.background.color = getBgColor(t, dark);
+  // (Pixi bg color is drawn each tick by buildParticleNetwork, reading live store values)
 
   function getBgColor(th: string, dk: boolean): number {
     if (!dk) return 0xe8d8b0;
@@ -63,7 +62,7 @@
     app = new Application();
     await app.init({
       resizeTo: containerEl,
-      backgroundColor: getBgColor($theme, $darkMode),
+      backgroundAlpha: 0,   // transparent — we draw bg in ticker
       antialias: true,
       resolution: window.devicePixelRatio || 1,
       autoDensity: true,
@@ -93,6 +92,9 @@
 
     app.ticker.add(() => {
       gfx.clear();
+      // Draw background rect every frame so theme changes are instant
+      gfx.rect(0, 0, app.screen.width, app.screen.height).fill({ color: getBgColor($theme, $darkMode) });
+
       const color = getParticleColor($theme, $darkMode);
 
       for (const p of pts) {
@@ -136,10 +138,7 @@
   function triggerTransition() {
     if (triggered || !app) return;
     triggered = true;
-
-    const white = new Graphics();
-    white.rect(-9999, -9999, 99999, 99999).fill({ color: 0xffffff, alpha: 0 });
-    app.stage.addChild(white);
+    transitioning = true; // hides HTML overlay immediately
 
     const filter = new ColorMatrixFilter();
     app.stage.filters = [filter];
@@ -150,23 +149,26 @@
       elapsed += ticker.deltaMS;
 
       if (phase === 0) {
+        // Phase 0: flicker (350ms)
         if (elapsed < 350) {
           filter.brightness(1 + Math.abs(Math.sin(elapsed * 0.025)) * 2.5, false);
         } else { phase = 1; elapsed = 0; }
 
       } else if (phase === 1) {
+        // Phase 1: collapse + brighten (600ms)
         if (elapsed < 600) {
           const p = elapsed / 600;
           const s = 1 - p * 0.98;
           app.stage.scale.set(s);
-          app.stage.position.set(app.screen.width / 2 * (1 - s), app.screen.height / 2 * (1 - s));
-          filter.brightness(1 + p * 5, false);
-        } else {
-          phase = 2; elapsed = 0;
-          white.clear().rect(-9999, -9999, 99999, 99999).fill({ color: 0xffffff, alpha: 1 });
-        }
+          app.stage.position.set(
+            app.screen.width  / 2 * (1 - s),
+            app.screen.height / 2 * (1 - s),
+          );
+          filter.brightness(1 + p * 6, false);
+        } else { phase = 2; elapsed = 0; }
 
-      } else if (phase === 2 && elapsed >= 150) {
+      } else if (phase === 2 && elapsed >= 100) {
+        // Phase 2: navigate after brief white flash
         window.location.href = officeUrl;
       }
     });
@@ -183,7 +185,8 @@
   tabindex="0"
   aria-label="Click anywhere to enter"
 >
-  <!-- HTML overlay sits above Pixi canvas (z-index) -->
+  <!-- HTML overlay: hidden when transition starts so Pixi animation plays cleanly -->
+  {#if !transitioning}
   <div class="overlay">
     <!-- Certificate card -->
     <div class="cert">
@@ -204,6 +207,12 @@
     <!-- Hint -->
     <p class="hint">{hintText}</p>
   </div>
+  {/if}
+
+  <!-- White flash overlay that fades in at the end of the transition -->
+  {#if transitioning}
+  <div class="flash" style="animation-delay: 0.85s;"></div>
+  {/if}
 </div>
 
 <style>
@@ -227,6 +236,18 @@
     pointer-events: none; /* let clicks fall through to .wrap */
     z-index: 5;
   }
+
+  /* Transition flash overlay */
+  .flash {
+    position: absolute;
+    inset: 0;
+    background: white;
+    z-index: 10;
+    opacity: 0;
+    animation: flash-in 0.3s ease-in forwards;
+    pointer-events: none;
+  }
+  @keyframes flash-in { to { opacity: 1; } }
 
   /* Certificate */
   .cert {
