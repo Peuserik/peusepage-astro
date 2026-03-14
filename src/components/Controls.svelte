@@ -39,9 +39,9 @@
     </button>
     {#if showThemePicker}
       <div class="theme-picker">
-        <button on:click={() => setTheme('warm')}>Warm</button>
-        <button on:click={() => setTheme('cool')}>Cool</button>
-        <button on:click={() => setTheme('mono')}>Mono</button>
+        <button class:active={$theme==='warm'} on:click={() => setTheme('warm')}>🔥 Embers</button>
+        <button class:active={$theme==='cool'} on:click={() => setTheme('cool')}>🌌 Starfield</button>
+        <button class:active={$theme==='mono'} on:click={() => setTheme('mono')}>👾 Matrix</button>
       </div>
     {/if}
   </div>
@@ -113,7 +113,8 @@
     transition: background 0.15s, color 0.15s;
   }
 
-  .theme-picker button:hover {
+  .theme-picker button:hover,
+  .theme-picker button.active {
     background: rgba(232, 160, 64, 0.15);
     color: #e8a040;
   }

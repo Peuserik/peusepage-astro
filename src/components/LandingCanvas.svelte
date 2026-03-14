@@ -33,21 +33,24 @@
 
   // ── Color helpers ─────────────────────────────────────────────────────────
   function getBg(th: string, dk: boolean): number {
-    if (!dk) return 0xd8c898;
-    if (th === 'cool') return 0x020610;
-    if (th === 'mono') return 0x030303;
-    return 0x080502;
+    if (!dk) {
+      if (th === 'cool') return 0x0a1428; // dark navy even in light — starfield needs darkness
+      if (th === 'mono') return 0x0a0a0a;
+      return 0x1a0d04;                    // dark amber — embers need darkness too
+    }
+    if (th === 'cool') return 0x010408;
+    if (th === 'mono') return 0x020202;
+    return 0x060300;
   }
   function getAccent(th: string, dk: boolean): number {
-    if (!dk) return th === 'cool' ? 0x2060c0 : th === 'mono' ? 0x505050 : 0xb05010;
-    if (th === 'cool') return 0x2888e0;
-    if (th === 'mono') return 0x909090;
-    return 0xe07828;
+    if (th === 'cool') return dk ? 0x1c6fd4 : 0x2288ff;
+    if (th === 'mono') return dk ? 0x707070 : 0x909090;
+    return dk ? 0xd06010 : 0xff8820;
   }
   function getBright(th: string): number {
-    if (th === 'cool') return 0x90d8ff;
-    if (th === 'mono') return 0xd0d0d0;
-    return 0xffc060;
+    if (th === 'cool') return 0xaaddff;
+    if (th === 'mono') return 0xe8e8e8;
+    return 0xffdd88;
   }
 
   // ── Screensaver state ─────────────────────────────────────────────────────
@@ -106,45 +109,45 @@
   // ── Screensaver: warm — floating embers ──────────────────────────────────
   function spawnEmber(W: number, H: number): Ember {
     return {
-      x: W * 0.1 + Math.random() * W * 0.8,
+      x: W * 0.05 + Math.random() * W * 0.9,
       y: H + 5,
-      vx: (Math.random() - 0.5) * 0.7,
-      vy: -(0.5 + Math.random() * 1.4),
-      r: 1.2 + Math.random() * 3.5,
+      vx: (Math.random() - 0.5) * 0.9,
+      vy: -(1.2 + Math.random() * 2.2),   // faster rise
+      r: 2.5 + Math.random() * 5.5,        // larger particles
       life: 0,
-      max: 140 + Math.random() * 160,
+      max: 160 + Math.random() * 140,      // live long enough to reach ~60% up
     };
   }
 
   function drawEmbers(gfx: Graphics, W: number, H: number, th: string, dk: boolean) {
-    if (embers.length < 110) embers.push(spawnEmber(W, H));
+    if (embers.length < 140) embers.push(spawnEmber(W, H));
     const accent = getAccent(th, dk), bright = getBright(th);
 
     for (let i = embers.length - 1; i >= 0; i--) {
       const e = embers[i];
-      e.x += e.vx + Math.sin(e.life * 0.045 + i) * 0.4;
+      e.x += e.vx + Math.sin(e.life * 0.045 + i) * 0.5;
       e.y += e.vy;
       e.life++;
-      if (e.life > e.max || e.y < -10) { embers.splice(i, 1); continue; }
+      if (e.life > e.max || e.y < H * 0.3) { embers.splice(i, 1); continue; }
 
       const p = e.life / e.max;
-      const alpha = p < 0.15 ? p / 0.15 : 1 - (p - 0.15) / 0.85;
-      gfx.circle(e.x, e.y, e.r * (1 - p * 0.4));
-      gfx.fill({ color: p > 0.45 ? bright : accent, alpha: alpha * 0.9 });
+      const alpha = p < 0.12 ? p / 0.12 : 1 - (p - 0.12) / 0.88;
+      gfx.circle(e.x, e.y, e.r * (1 - p * 0.35));
+      gfx.fill({ color: p > 0.4 ? bright : accent, alpha: alpha * 0.92 });
     }
   }
 
   // ── Screensaver: cool — 3-D starfield ────────────────────────────────────
   function initStars(W: number, H: number) {
     stars.length = 0;
-    for (let i = 0; i < 220; i++)
+    for (let i = 0; i < 300; i++)
       stars.push({ x: Math.random() * W - W / 2, y: Math.random() * H - H / 2, z: Math.random() * W, pz: 0 });
     starsReady = true;
   }
 
   function drawStarfield(gfx: Graphics, W: number, H: number, th: string, dk: boolean) {
     if (!starsReady) initStars(W, H);
-    const speed = dk ? 5 : 2.5;
+    const speed = 7; // always fast — visible regardless of light/dark
     const accent = getAccent(th, dk), bright = getBright(th);
 
     for (const s of stars) {
@@ -157,14 +160,13 @@
       const px = (s.x / s.pz) * W + W / 2;
       const py = (s.y / s.pz) * H + H / 2;
       const nearness = 1 - s.z / W;
-      const color = nearness > 0.7 ? bright : accent;
+      const color = nearness > 0.6 ? bright : accent;
 
-      if (nearness > 0.05) {
-        gfx.moveTo(px, py).lineTo(sx, sy);
-        gfx.stroke({ color, alpha: nearness * 0.7, width: nearness * 1.5 });
-      }
-      gfx.circle(sx, sy, Math.max(0.5, nearness * 2));
-      gfx.fill({ color, alpha: nearness });
+      // Always draw streak + dot for maximum visibility
+      gfx.moveTo(px, py).lineTo(sx, sy);
+      gfx.stroke({ color, alpha: Math.max(0.15, nearness * 0.9), width: nearness * 2.5 });
+      gfx.circle(sx, sy, Math.max(1, nearness * 2.5));
+      gfx.fill({ color, alpha: Math.max(0.3, nearness) });
     }
   }
 
