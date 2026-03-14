@@ -4,7 +4,7 @@
 
 person:
   name: "Lars Müller-Gilberger"
-  title: "IT Operations & Strategy Manager"
+  title: "Cloud & Strategy Manager"
   tagline: "Bridging technology and business — one system at a time."
 
 social:
@@ -13,7 +13,7 @@ social:
   x_handle: "@peuserik"
   threads_handle: "@peuserik"
   github: "https://github.com/peuserik"
-  email: "larsmg@web.de"
+  email: "info@peuserik.de"
 
 cv_summary: >
   Experienced IT leader with a passion for aligning technology strategy
