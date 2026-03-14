@@ -65,10 +65,12 @@
   let containerEl: HTMLDivElement;
   let app: Application;
   let config: any  = {};
+  let translations: any = {};
   let ro: ResizeObserver;
 
   let hoverZone: string | null = null;
   let matrixTick = 0;
+  let monitorOn = true;
 
   // Pre-computed star positions within window glass
   const starPos: Array<[number, number, number]> = [];
@@ -452,9 +454,14 @@
     // CRT bottom controls strip
     g.roundRect(MN_X + 10, MN_Y + MN_H - 28, MN_W - 20, 20, 3)
      .fill({ color: lerp(c.crtPlastic, 0x000000, 0.12) });
-    // Power button
-    g.circle(MN_X + MN_W - 28, MN_Y + MN_H - 18, 6).fill({ color: lerp(c.crtPlastic, 0x004400, 0.5) });
-    g.circle(MN_X + MN_W - 28, MN_Y + MN_H - 18, 4).fill({ color: 0x22cc22 });
+    // Power button LED (state-dependent)
+    if (monitorOn) {
+      g.circle(MN_X + MN_W - 28, MN_Y + MN_H - 18, 6).fill({ color: lerp(c.crtPlastic, 0x004400, 0.5) });
+      g.circle(MN_X + MN_W - 28, MN_Y + MN_H - 18, 4).fill({ color: 0x22cc22 });
+    } else {
+      g.circle(MN_X + MN_W - 28, MN_Y + MN_H - 18, 6).fill({ color: 0x220000 });
+      g.circle(MN_X + MN_W - 28, MN_Y + MN_H - 18, 4).fill({ color: 0x440000 });
+    }
     // Monitor base stand
     g.roundRect(MN_X + MN_W / 2 - 40, MN_Y + MN_H - 4, 80, 10, 2)
      .fill({ color: lerp(c.crtPlastic, 0x000000, 0.25) });
@@ -495,8 +502,8 @@
   }
 
   function drawMug(g: Graphics, c: C) {
-    // Shadow
-    g.circle(MG_X + MG_W / 2 + 3, MG_Y + MG_H + 3, MG_W * 0.4).fill({ color: 0x000000, alpha: 0.15 });
+    // Shadow first (ellipse under mug)
+    g.ellipse(MG_X + MG_W / 2, MG_Y + MG_H + 4, MG_W / 2 + 4, 5).fill({ color: 0x000000, alpha: 0.25 });
     // Mug body
     g.roundRect(MG_X, MG_Y + 14, MG_W, MG_H - 14, 4).fill({ color: c.mug });
     // Mug rim (top)
@@ -513,7 +520,7 @@
     }
   }
 
-  function drawLamp(g: Graphics, c: C) {
+  function drawLamp(g: Graphics, c: C, darkMode: boolean) {
     // Base
     g.roundRect(LMP_X, LMP_Y, LMP_W, 14, 3).fill({ color: lerp(c.woodLight, 0x888888, 0.4) });
     // Arm post (vertical)
@@ -526,10 +533,12 @@
     const sx2 = LMP_X + LMP_W / 2 + 32;
     const sy2 = LMP_Y - 60;
     g.poly([sx2 - 18, sy2, sx2 + 20, sy2, sx2 + 28, sy2 + 24, sx2 - 26, sy2 + 24]).fill({ color: c.lampShade });
-    // Glow circle (warm light spill)
-    g.circle(sx2 + 1, sy2 + 30, 34).fill({ color: 0xffee88, alpha: 0.08 });
-    // Shade underlight
-    g.circle(sx2 + 1, sy2 + 22, 12).fill({ color: 0xffffff, alpha: 0.15 });
+    if (darkMode) {
+      // Glow circle (warm light spill)
+      g.circle(sx2 + 1, sy2 + 30, 34).fill({ color: 0xffee88, alpha: 0.08 });
+      // Shade underlight
+      g.circle(sx2 + 1, sy2 + 22, 12).fill({ color: 0xffffff, alpha: 0.15 });
+    }
   }
 
   function drawChair(g: Graphics, c: C) {
@@ -611,6 +620,8 @@
       cv:       [PL_X - 2, PL_Y - 2,   PL_W + 4,  PL_H + 4],
       corkboard:[CK_X - 2, CK_Y - 2,   CK_W + 4,  CK_H + 4],
       hobbies:  [SH_X - 2, SH_Y - SH_H - 10, SH_W + 4, SH_H + 60],
+      keyboard: [KB_X - 4, KB_Y - 4, KB_W + 8, KB_H + 8],
+      mouse:    [MS_X - 6, MS_Y - 6, MS_W + 12, MS_H + 12],
     };
     const z = zones[hoverZone];
     if (!z) return;
@@ -633,8 +644,12 @@
     drawKeyboard(g, c);
     drawMouse(g, c);
     drawMug(g, c);
-    drawLamp(g, c);
-    drawMatrixRain(g, c);
+    drawLamp(g, c, dk);
+    if (monitorOn) {
+      drawMatrixRain(g, c);
+    } else {
+      g.rect(SC_X, SC_Y, SC_W, SC_H).fill({ color: 0x000000 });
+    }
     drawChair(g, c);
     drawTrashCan(g, c);
     drawHoverGlow(g);
@@ -680,6 +695,8 @@
       { name: 'cv',        x: PL_X,      y: PL_Y,      w: PL_W,      h: PL_H,      popup: 'cv'       },
       { name: 'corkboard', x: CK_X - 4,  y: CK_Y - 4,  w: CK_W + 8,  h: CK_H + 8,  popup: 'pinboard' },
       { name: 'hobbies',   x: SH_X - 4,  y: SH_Y - 56, w: SH_W + 8,  h: 80,         popup: 'hobbies'  },
+      { name: 'keyboard',  x: KB_X - 4,  y: KB_Y - 4,  w: KB_W + 8,  h: KB_H + 8,  popup: 'menu'     },
+      { name: 'mouse',     x: MS_X - 6,  y: MS_Y - 6,  w: MS_W + 12, h: MS_H + 12, popup: 'menu'     },
     ];
 
     for (const z of zoneDefs) {
@@ -692,11 +709,20 @@
       zone.on('pointerout',  () => { hoverZone = null; });
       app.stage.addChild(zone);
     }
+
+    // Power button toggle
+    const powerBtn = new Graphics();
+    powerBtn.circle(MN_X + MN_W - 28, MN_Y + MN_H - 18, 14).fill({ color: 0xffffff, alpha: 0.01 });
+    powerBtn.eventMode = 'static';
+    powerBtn.cursor = 'pointer';
+    powerBtn.on('pointerdown', () => { monitorOn = !monitorOn; });
+    app.stage.addChild(powerBtn);
   }
 
   // ── Mount ─────────────────────────────────────────────────────────────────
   onMount(async () => {
     try { config = JSON.parse(configJson); } catch {}
+    try { translations = JSON.parse(translationsJson); } catch {}
 
     // Pre-compute star positions
     for (let i = 0; i < 22; i++) {
@@ -779,16 +805,16 @@
   {/if}
 
   {#if $activePopup === 'menu'}
-    <MainMenuPopup {config} />
+    <MainMenuPopup {config} {translations} />
   {/if}
   {#if $activePopup === 'cv'}
-    <CVPopup {config} />
+    <CVPopup {config} {translations} />
   {/if}
   {#if $activePopup === 'hobbies'}
-    <HobbiesPopup {config} />
+    <HobbiesPopup {config} {translations} />
   {/if}
   {#if $activePopup === 'pinboard'}
-    <PinboardPopup {config} />
+    <PinboardPopup {config} {translations} />
   {/if}
 
 </div>

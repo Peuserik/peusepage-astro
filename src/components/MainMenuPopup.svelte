@@ -1,7 +1,31 @@
 <script lang="ts">
   import { openPopup, closePopup } from '../stores/popup';
+  import { lang } from '../stores/settings';
 
   export let config: any = {};
+  export let translations: any = {};
+
+  let el: HTMLDivElement;
+  let px = -1, py = -1;
+  let dragging = false, ox = 0, oy = 0;
+
+  function startDrag(e: PointerEvent) {
+    if (!el) return;
+    dragging = true;
+    const r = el.getBoundingClientRect();
+    if (px < 0) { px = r.left - el.offsetParent!.getBoundingClientRect().left; py = r.top - el.offsetParent!.getBoundingClientRect().top; }
+    ox = e.clientX - px; oy = e.clientY - py;
+    el.setPointerCapture(e.pointerId);
+  }
+  function onDrag(e: PointerEvent) {
+    if (!dragging) return;
+    const par = el.offsetParent!.getBoundingClientRect();
+    px = Math.max(0, Math.min(e.clientX - ox, par.width  - el.offsetWidth));
+    py = Math.max(0, Math.min(e.clientY - oy, par.height - el.offsetHeight));
+  }
+  function stopDrag() { dragging = false; }
+
+  $: titleText = translations[$lang ?? 'en']?.nav_home ?? 'MAIN MENU';
 
   interface MenuItem {
     icon: string;
@@ -32,9 +56,14 @@
   const _timer = setInterval(() => { timeStr = getTime(); }, 1000);
 </script>
 
-<div class="popup-window main-menu">
-  <div class="titlebar">
-    <span class="title">📟 MAIN MENU</span>
+<div bind:this={el}
+  class="popup-window main-menu"
+  style={px >= 0 ? `position:absolute;left:${px}px;top:${py}px` : `position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)`}
+  on:pointermove={onDrag}
+  on:pointerup={stopDrag}
+>
+  <div class="titlebar" on:pointerdown={startDrag} style="cursor:move">
+    <span class="title">📟 {titleText}</span>
     <button class="close-btn" on:click={closePopup} aria-label="Close">[X]</button>
   </div>
 
@@ -59,10 +88,6 @@
 
 <style>
   .popup-window {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
     background: #1a1a12;
     border: 2px solid #40cc40;
     box-shadow: 4px 4px 0 #000000, inset 1px 1px 0 #60ee60, inset -1px -1px 0 #204020;
@@ -83,7 +108,6 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    cursor: default;
   }
 
   .title {

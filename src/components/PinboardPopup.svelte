@@ -1,16 +1,47 @@
 <script lang="ts">
   import { closePopup } from '../stores/popup';
+  import { lang } from '../stores/settings';
 
   export let config: any = {};
+  export let translations: any = {};
+
+  let el: HTMLDivElement;
+  let px = -1, py = -1;
+  let dragging = false, ox = 0, oy = 0;
+
+  function startDrag(e: PointerEvent) {
+    if (!el) return;
+    dragging = true;
+    const r = el.getBoundingClientRect();
+    if (px < 0) { px = r.left - el.offsetParent!.getBoundingClientRect().left; py = r.top - el.offsetParent!.getBoundingClientRect().top; }
+    ox = e.clientX - px; oy = e.clientY - py;
+    el.setPointerCapture(e.pointerId);
+  }
+  function onDrag(e: PointerEvent) {
+    if (!dragging) return;
+    const par = el.offsetParent!.getBoundingClientRect();
+    px = Math.max(0, Math.min(e.clientX - ox, par.width  - el.offsetWidth));
+    py = Math.max(0, Math.min(e.clientY - oy, par.height - el.offsetHeight));
+  }
+  function stopDrag() { dragging = false; }
+
+  $: titleText     = translations[$lang ?? 'en']?.popup_pinboard ?? 'UPDATES';
+  $: workingOnText = translations[$lang ?? 'en']?.currently_working_on ?? 'Currently Working On';
+  $: latestEvText  = translations[$lang ?? 'en']?.latest_events ?? 'Latest Events';
 
   $: pinboard = config?.pinboard ?? {};
   $: events   = pinboard?.latest_events ?? [];
   $: working  = pinboard?.currently_working_on ?? [];
 </script>
 
-<div class="popup-window pinboard-popup">
-  <div class="titlebar">
-    <span class="title">📌 PINBOARD</span>
+<div bind:this={el}
+  class="popup-window pinboard-popup"
+  style={px >= 0 ? `position:absolute;left:${px}px;top:${py}px` : `position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)`}
+  on:pointermove={onDrag}
+  on:pointerup={stopDrag}
+>
+  <div class="titlebar" on:pointerdown={startDrag} style="cursor:move">
+    <span class="title">📌 {titleText}</span>
     <button class="close-btn" on:click={closePopup} aria-label="Close">[X]</button>
   </div>
 
@@ -19,7 +50,7 @@
 
       <!-- Left column: Latest events -->
       <div class="col">
-        <p class="col-title">[LATEST EVENTS]</p>
+        <p class="col-title">[{latestEvText.toUpperCase()}]</p>
         {#each events as ev}
           <p class="event-item">▶ {ev}</p>
         {/each}
@@ -27,7 +58,7 @@
 
       <!-- Right column: Currently working on -->
       <div class="col">
-        <p class="col-title">[WORKING ON]</p>
+        <p class="col-title">[{workingOnText.toUpperCase()}]</p>
         {#each working as item}
           <div class="progress-item">
             <p class="progress-label">{item.label}</p>
@@ -50,10 +81,6 @@
 
 <style>
   .popup-window {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
     background: #1a1a12;
     border: 2px solid #40cc40;
     box-shadow: 4px 4px 0 #000000, inset 1px 1px 0 #60ee60, inset -1px -1px 0 #204020;
