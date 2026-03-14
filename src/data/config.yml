@@ -3,17 +3,17 @@
 # ============================================================
 
 person:
-  name: "Alexander Meyer"
+  name: "Lars Müller-Gilberger"
   title: "IT Operations & Strategy Manager"
   tagline: "Bridging technology and business — one system at a time."
 
 social:
-  linkedin: "https://linkedin.com/in/placeholder"
-  xing: "https://xing.com/profile/placeholder"
-  x_handle: "@placeholder"
-  threads_handle: "@placeholder"
-  github: "https://github.com/placeholder"
-  email: "hello@example.com"
+  linkedin: "https://linkedin.com/in/lars-mueller-gilberger"
+  xing: "https://xing.com/profile/lars-mueller-gilberger"
+  x_handle: "@peuserik"
+  threads_handle: "@peuserik"
+  github: "https://github.com/peuserik"
+  email: "larsmg@web.de"
 
 cv_summary: >
   Experienced IT leader with a passion for aligning technology strategy
