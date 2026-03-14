@@ -86,6 +86,15 @@
   interface MCol { x: number; y: number; speed: number; len: number }
   const matrixCols: MCol[] = [];
 
+  // Embers (warm screensaver on CRT)
+  interface Ember { x: number; y: number; vx: number; vy: number; r: number; life: number; max: number }
+  const scrEmbers: Ember[] = [];
+
+  // Stars (cool screensaver on CRT)
+  interface SStar { x: number; y: number; z: number; pz: number }
+  const scrStars: SStar[] = [];
+  let scrStarsReady = false;
+
   // Corkboard note rects (randomised once)
   const corkNotes: Array<{ x: number; y: number; w: number; h: number; ci: number }> = [];
 
@@ -257,30 +266,29 @@
   }
 
   function drawNameplate(g: Graphics, c: C) {
-    // Outer frame (wood)
+    // Outer frame
     g.roundRect(PL_X, PL_Y, PL_W, PL_H, 5).fill({ color: c.plateBorder });
     // Parchment background
     g.roundRect(PL_X + 8, PL_Y + 8, PL_W - 16, PL_H - 16, 3).fill({ color: c.nameplate });
     // Inner border double-line
     g.roundRect(PL_X + 14, PL_Y + 14, PL_W - 28, PL_H - 28, 2).stroke({ color: lerp(c.plateBorder, 0x000000, 0.3), width: 1.5 });
     g.roundRect(PL_X + 18, PL_Y + 18, PL_W - 36, PL_H - 36, 2).stroke({ color: lerp(c.plateBorder, 0x000000, 0.2), width: 1 });
-    // Decorative seal symbol (rendered as horizontal lines suggesting text)
+
     const lx = PL_X + 40, lw = PL_W - 80;
-    const textLineColor = lerp(c.plateBorder, 0x000000, 0.45);
-    // Title line (thick)
-    g.rect(lx, PL_Y + 48, lw, 7).fill({ color: textLineColor, alpha: 0.7 });
-    // Sub-title line
-    g.rect(lx + 20, PL_Y + 64, lw - 40, 5).fill({ color: textLineColor, alpha: 0.5 });
-    // Horizontal rule
-    g.moveTo(lx - 10, PL_Y + 84).lineTo(lx + lw + 10, PL_Y + 84);
+    const lineCol = lerp(c.plateBorder, 0x000000, 0.45);
+
+    // Underline below name (name text top is PL_Y+30, fontSize 20 → bottom ~+50, underline at +54)
+    g.rect(lx, PL_Y + 54, lw, 2).fill({ color: lineCol, alpha: 0.55 });
+    // Underline below title (title top is PL_Y+62, fontSize 13 → bottom ~+75, underline at +79)
+    g.rect(lx + 20, PL_Y + 79, lw - 40, 1.5).fill({ color: lineCol, alpha: 0.4 });
+    // Horizontal divider rule
+    g.moveTo(lx - 10, PL_Y + 94).lineTo(lx + lw + 10, PL_Y + 94);
     g.stroke({ color: lerp(c.plateBorder, 0x000000, 0.4), width: 1.5 });
-    // Body text lines
-    for (let i = 0; i < 3; i++) {
-      const llen = i === 1 ? lw - 60 : lw - 30;
-      g.rect(lx + (i === 1 ? 30 : 0), PL_Y + 100 + i * 22, llen, 4).fill({ color: textLineColor, alpha: 0.4 });
-    }
-    // Decorative corner ornaments
-    const orn = 0xe8a040;
+    // Tagline underlines (tagline top PL_Y+102, +118 → underlines at +115, +131)
+    g.rect(lx, PL_Y + 115, lw - 20, 1).fill({ color: lineCol, alpha: 0.3 });
+    g.rect(lx + 10, PL_Y + 131, lw - 40, 1).fill({ color: lineCol, alpha: 0.3 });
+
+    // Corner ornaments
     for (const [ox, oy] of [[PL_X + 24, PL_Y + 24], [PL_X + PL_W - 38, PL_Y + 24],
                             [PL_X + 24, PL_Y + PL_H - 38], [PL_X + PL_W - 38, PL_Y + PL_H - 38]]) {
       g.circle(ox + 7, oy + 7, 5).fill({ color: c.plateBorder });
@@ -599,6 +607,14 @@
     g.ellipse(TR_X + TR_W / 2, TR_Y + TR_H + 3, TR_W * 0.55, 8).fill({ color: 0x000000, alpha: 0.18 });
   }
 
+  // ── CRT screensaver (switches per theme, clipped to screen rect) ──────────
+
+  function drawCRTScreensaver(g: Graphics, c: C, th: string) {
+    if (th === 'warm') drawScrEmbers(g, c);
+    else if (th === 'cool') drawScrStarfield(g, c);
+    else drawMatrixRain(g, c);
+  }
+
   function drawMatrixRain(g: Graphics, c: C) {
     const advance = matrixTick % 3 === 0;
     for (const col of matrixCols) {
@@ -616,6 +632,60 @@
         const alpha = j === 0 ? 0.95 : (1 - t) * 0.65;
         g.rect(col.x + 1, gy + 1, CELL - 2, CELL - 2).fill({ color, alpha });
       }
+    }
+  }
+
+  function drawScrEmbers(g: Graphics, c: C) {
+    // Spawn new embers from the bottom of the screen
+    if (scrEmbers.length < 40) {
+      scrEmbers.push({
+        x: SC_X + 4 + Math.random() * (SC_W - 8),
+        y: SC_Y + SC_H + 2,
+        vx: (Math.random() - 0.5) * 0.6,
+        vy: -(0.5 + Math.random() * 1.2),
+        r: 1 + Math.random() * 2.5,
+        life: 0,
+        max: 60 + Math.random() * 80,
+      });
+    }
+    for (let i = scrEmbers.length - 1; i >= 0; i--) {
+      const e = scrEmbers[i];
+      e.x += e.vx + Math.sin(e.life * 0.06 + i) * 0.3;
+      e.y += e.vy;
+      e.life++;
+      if (e.life > e.max || e.y < SC_Y - 2) { scrEmbers.splice(i, 1); continue; }
+      // Clip to screen bounds
+      if (e.x < SC_X || e.x > SC_X + SC_W) continue;
+      const p = e.life / e.max;
+      const alpha = p < 0.15 ? p / 0.15 : 1 - (p - 0.15) / 0.85;
+      g.circle(e.x, e.y, e.r * (1 - p * 0.4));
+      g.fill({ color: p > 0.4 ? c.matrixBright : c.matrixCol, alpha: alpha * 0.92 });
+    }
+  }
+
+  function drawScrStarfield(g: Graphics, c: C) {
+    if (!scrStarsReady) {
+      for (let i = 0; i < 80; i++)
+        scrStars.push({ x: Math.random() * SC_W - SC_W / 2, y: Math.random() * SC_H - SC_H / 2, z: Math.random() * SC_W, pz: 0 });
+      scrStarsReady = true;
+    }
+    const cx = SC_X + SC_W / 2, cy = SC_Y + SC_H / 2;
+    for (const s of scrStars) {
+      s.pz = s.z;
+      s.z -= 5;
+      if (s.z <= 1) { s.x = Math.random() * SC_W - SC_W / 2; s.y = Math.random() * SC_H - SC_H / 2; s.z = SC_W; s.pz = SC_W; }
+      const sx = (s.x / s.z) * SC_W + cx;
+      const sy = (s.y / s.z) * SC_H + cy;
+      const px = (s.x / s.pz) * SC_W + cx;
+      const py = (s.y / s.pz) * SC_H + cy;
+      // Clip to screen rect
+      if (sx < SC_X || sx > SC_X + SC_W || sy < SC_Y || sy > SC_Y + SC_H) continue;
+      const nearness = 1 - s.z / SC_W;
+      const color = nearness > 0.6 ? c.matrixBright : c.matrixCol;
+      g.moveTo(px, py).lineTo(sx, sy);
+      g.stroke({ color, alpha: Math.max(0.15, nearness * 0.9), width: nearness * 2 });
+      g.circle(sx, sy, Math.max(0.5, nearness * 1.5));
+      g.fill({ color, alpha: Math.max(0.3, nearness) });
     }
   }
 
@@ -657,7 +727,7 @@
     drawMug(g, c);
     drawLamp(g, c, dk);
     if (monitorOn) {
-      drawMatrixRain(g, c);
+      drawCRTScreensaver(g, c, th);
     } else {
       g.rect(SC_X, SC_Y, SC_W, SC_H).fill({ color: 0x000000 });
     }
@@ -669,31 +739,30 @@
   // ── Text labels (added once to stage) ────────────────────────────────────
   function addTextLabels() {
     const p = config?.person ?? {};
-    const nameStyle = new TextStyle({ fontFamily: 'Special Elite, cursive, serif', fontSize: 20, fill: '#2a1808', align: 'center', fontWeight: 'bold' });
+    const nameStyle     = new TextStyle({ fontFamily: 'Special Elite, cursive, serif', fontSize: 20, fill: '#2a1808', align: 'center', fontWeight: 'bold' });
     const subtitleStyle = new TextStyle({ fontFamily: 'Special Elite, cursive, serif', fontSize: 13, fill: '#4a3018', align: 'center' });
     const tagStyle      = new TextStyle({ fontFamily: 'Special Elite, cursive, serif', fontSize: 11, fill: '#5a3820', align: 'center', fontStyle: 'italic' });
 
+    // anchor (0.5, 0) = horizontally centered, top-anchored
     if (p.name) {
       const t = new Text({ text: p.name ?? '', style: nameStyle });
       t.anchor.set(0.5, 0);
-      t.position.set(PL_X + PL_W / 2, PL_Y + 44);
+      t.position.set(PL_X + PL_W / 2, PL_Y + 30); // bottom ~PL_Y+50, underline at +54
       app.stage.addChild(t);
     }
     if (p.title) {
       const t = new Text({ text: p.title ?? '', style: subtitleStyle });
       t.anchor.set(0.5, 0);
-      t.position.set(PL_X + PL_W / 2, PL_Y + 74);
+      t.position.set(PL_X + PL_W / 2, PL_Y + 62); // bottom ~PL_Y+75, underline at +79
       app.stage.addChild(t);
     }
     if (p.tagline) {
       const words = (p.tagline as string).split(' ');
-      const mid = Math.ceil(words.length / 2);
-      const line1 = words.slice(0, mid).join(' ');
-      const line2 = words.slice(mid).join(' ');
-      for (const [i, line] of [[0, line1], [1, line2]] as [number, string][]) {
+      const mid   = Math.ceil(words.length / 2);
+      for (const [i, line] of [[0, words.slice(0, mid).join(' ')], [1, words.slice(mid).join(' ')]] as [number, string][]) {
         const t = new Text({ text: line, style: tagStyle });
         t.anchor.set(0.5, 0);
-        t.position.set(PL_X + PL_W / 2, PL_Y + 102 + i * 16);
+        t.position.set(PL_X + PL_W / 2, PL_Y + 100 + i * 16); // underlines at +115, +131
         app.stage.addChild(t);
       }
     }
